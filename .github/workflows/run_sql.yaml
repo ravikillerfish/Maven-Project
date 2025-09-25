@@ -16,48 +16,32 @@ jobs:
   sql-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set environment variables
+      - name: Set variables
         run: |
           echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
           echo "FILE=${{ github.event.inputs.file }}" >> $GITHUB_ENV
 
-      - name: Determine action
-        id: decide
+      - name: List SQL files (if no file selected)
+        if: env.FILE == ''
         run: |
-          if [ -z "$FILE" ]; then
-            echo "action=list" >> $GITHUB_ENV
-          else
-            echo "action=run" >> $GITHUB_ENV
-          fi
+          echo "Listing SQL files in sql/$ENV/:"
+          FILES=$(ls sql/$ENV/*.sql || echo "No files found")
+          echo "$FILES"
+          # Post as comment
+          gh auth setup-git
+          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments \
+            -f body="Available SQL files for environment $ENV:\n$FILES"
 
-      # Step to list all SQL files in the selected environment
-      - name: List SQL files
-        if: env.action == 'list'
-        run: |
-          echo "Listing all SQL files in sql/$ENV/:"
-          ls sql/$ENV/*.sql || echo "No SQL files found in sql/$ENV/"
-
-      # Upload the list as an artifact (v4)
-      - name: Upload SQL file list
-        if: env.action == 'list'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sql-file-list
-          path: sql/${{ env.ENV }}/*.sql
-
-      # Step to run the selected SQL file
-      - name: Run selected SQL file
-        if: env.action == 'run'
+      - name: Run SQL file (if file selected)
+        if: env.FILE != ''
         run: |
           SQL_PATH="sql/$ENV/$FILE"
           if [ ! -f "$SQL_PATH" ]; then
-            echo "Error: File $SQL_PATH does not exist!"
+            echo "Error: $SQL_PATH not found"
             exit 1
           fi
           echo "Running SQL file: $SQL_PATH"
-          # Replace the line below with your actual DB command, e.g., PostgreSQL
-          # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f "$SQL_PATH"
+          # Replace with your DB command
           echo "Simulating execution of $SQL_PATH"
