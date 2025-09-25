@@ -1,0 +1,33 @@
+name: Run SQL Script
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        type: choice
+        description: "Select environment"
+        options:
+          - dev
+          - qa
+      sql_file:
+        description: "Enter SQL file name from selected env folder"
+        required: true
+
+jobs:
+  run-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: List available SQL files
+        run: |
+          echo "Available files in sql/${{ github.event.inputs.env }}/:"
+          ls sql/${{ github.event.inputs.env }}
+
+      - name: Run selected SQL file
+        run: |
+          echo "Running sql/${{ github.event.inputs.env }}/${{ github.event.inputs.sql_file }}"
+          # Example: run with psql (PostgreSQL)
+          #           # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f sql/${{ github.event.inputs.env }}/${{ github.event.inputs.sql_file }}
+          #
