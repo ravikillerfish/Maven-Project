@@ -29,7 +29,7 @@ jobs:
           echo "Listing SQL files in sql/$ENV/:"
           FILES=$(ls sql/$ENV/*.sql || echo "No files found")
           echo "$FILES"
-          # Post as comment
+          # Post as comment using GitHub CLI (requires GITHUB_TOKEN)
           gh auth setup-git
           gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments \
             -f body="Available SQL files for environment $ENV:\n$FILES"
