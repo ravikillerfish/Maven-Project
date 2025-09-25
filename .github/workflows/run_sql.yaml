@@ -1,33 +1,61 @@
-name: Run SQL Script
+name: SQL Runner
 
 on:
   workflow_dispatch:
     inputs:
       env:
-        type: choice
-        description: "Select environment"
-        options:
-          - dev
-          - qa
-      sql_file:
-        description: "Enter SQL file name from selected env folder"
+        description: 'Environment (dev, qa, prod)'
         required: true
+        type: string
+      file:
+        description: 'SQL file to run (optional, leave blank to list files)'
+        required: false
+        type: string
 
 jobs:
-  run-sql:
+  sql-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: List available SQL files
+      - name: Set environment and file
         run: |
-          echo "Available files in sql/${{ github.event.inputs.env }}/:"
-          ls sql/${{ github.event.inputs.env }}
+          echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+          echo "FILE=${{ github.event.inputs.file }}" >> $GITHUB_ENV
+
+      - name: Check if file is provided
+        id: check
+        run: |
+          if [ -z "$FILE" ]; then
+            echo "Listing SQL files only"
+            echo "run_files_list=true" >> $GITHUB_ENV
+          else
+            echo "SQL file selected: $FILE"
+            echo "run_files_list=false" >> $GITHUB_ENV
+          fi
+
+      - name: List SQL files
+        if: env.run_files_list == 'true'
+        run: |
+          echo "Available SQL files in sql/$ENV/:"
+          ls sql/$ENV/*.sql
+        # Optionally save as artifact
+        - uses: actions/upload-artifact@v3
+          with:
+            name: sql-file-list
+            path: sql/$ENV/*.sql
 
       - name: Run selected SQL file
+        if: env.run_files_list == 'false'
         run: |
-          echo "Running sql/${{ github.event.inputs.env }}/${{ github.event.inputs.sql_file }}"
-          # Example: run with psql (PostgreSQL)
-          #           # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f sql/${{ github.event.inputs.env }}/${{ github.event.inputs.sql_file }}
-          #
+          SQL_PATH="sql/$ENV/$FILE"
+          if [ ! -f "$SQL_PATH" ]; then
+            echo "Error: File $SQL_PATH does not exist!"
+            exit 1
+          fi
+          echo "Running SQL file: $SQL_PATH"
+          # Replace below with your actual DB command
+          # Example for PostgreSQL:
+          # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f "$SQL_PATH"
+          echo "Simulating execution of $SQL_PATH"
