@@ -16,38 +16,36 @@ jobs:
   sql-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set environment and file
+      - name: Set environment variables
         run: |
           echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
           echo "FILE=${{ github.event.inputs.file }}" >> $GITHUB_ENV
 
-      - name: Check if file is provided
-        id: check
+      - name: Determine action
+        id: decide
         run: |
           if [ -z "$FILE" ]; then
-            echo "Listing SQL files only"
-            echo "run_files_list=true" >> $GITHUB_ENV
+            echo "action=list" >> $GITHUB_ENV
           else
-            echo "SQL file selected: $FILE"
-            echo "run_files_list=false" >> $GITHUB_ENV
+            echo "action=run" >> $GITHUB_ENV
           fi
 
       - name: List SQL files
-        if: env.run_files_list == 'true'
+        if: env.action == 'list'
         run: |
-          echo "Available SQL files in sql/$ENV/:"
+          echo "Listing all SQL files in sql/$ENV/:"
           ls sql/$ENV/*.sql
-        # Optionally save as artifact
+        # Optional: Save as artifact for download
         - uses: actions/upload-artifact@v3
           with:
             name: sql-file-list
             path: sql/$ENV/*.sql
 
       - name: Run selected SQL file
-        if: env.run_files_list == 'false'
+        if: env.action == 'run'
         run: |
           SQL_PATH="sql/$ENV/$FILE"
           if [ ! -f "$SQL_PATH" ]; then
@@ -55,7 +53,6 @@ jobs:
             exit 1
           fi
           echo "Running SQL file: $SQL_PATH"
-          # Replace below with your actual DB command
-          # Example for PostgreSQL:
+          # Replace the line below with your actual DB command, e.g., PostgreSQL
           # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f "$SQL_PATH"
           echo "Simulating execution of $SQL_PATH"
