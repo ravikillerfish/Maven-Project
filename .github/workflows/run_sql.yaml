@@ -33,19 +33,22 @@ jobs:
             echo "action=run" >> $GITHUB_ENV
           fi
 
+      # Step to list all SQL files in the selected environment
       - name: List SQL files
         if: env.action == 'list'
         run: |
           echo "Listing all SQL files in sql/$ENV/:"
-          ls sql/$ENV/*.sql
+          ls sql/$ENV/*.sql || echo "No SQL files found in sql/$ENV/"
 
+      # Upload the list as an artifact (v4)
       - name: Upload SQL file list
         if: env.action == 'list'
         uses: actions/upload-artifact@v4
         with:
           name: sql-file-list
-          path: sql/$ENV/*.sql
+          path: sql/${{ env.ENV }}/*.sql
 
+      # Step to run the selected SQL file
       - name: Run selected SQL file
         if: env.action == 'run'
         run: |
@@ -55,6 +58,6 @@ jobs:
             exit 1
           fi
           echo "Running SQL file: $SQL_PATH"
-          # Replace below with your actual DB command, e.g., PostgreSQL
+          # Replace the line below with your actual DB command, e.g., PostgreSQL
           # psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f "$SQL_PATH"
           echo "Simulating execution of $SQL_PATH"
